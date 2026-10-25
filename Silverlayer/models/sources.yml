@@ -1,0 +1,19 @@
+version: 2
+
+sources:
+  - name: raw
+    database: NESTLE_PROCUREMENT_DB
+    schema: RAW
+    tables:
+      - name: supplier_master
+      - name: supplier_onboarding
+      - name: supplier_rating
+      - name: product_master
+      - name: plant_master
+      - name: currency_exchange_rate
+      - name: purchase_orders
+      - name: invoices
+      - name: payments
+      - name: shipment_tracking
+      - name: shipment_tracking_events_raw
+      - name: purchase_order_lines_nested_raw

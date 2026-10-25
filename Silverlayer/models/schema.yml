@@ -1,0 +1,14 @@
+
+version: 2
+
+models:
+  - name: stg_purchase_orders
+    columns:
+      - name: po_id
+        tests: [not_null]
+      - name: supplier_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_supplier_master')
+              field: supplier_id
