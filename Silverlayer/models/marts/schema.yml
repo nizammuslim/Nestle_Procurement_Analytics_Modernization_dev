@@ -1,0 +1,16 @@
+version: 2
+
+models:
+  - name: fct_invoice
+    columns:
+      - name: invoice_id
+        tests: [not_null]
+      - name: po_id
+        tests:
+          - relationships:
+              to: ref('fct_purchase_order')
+              field: po_id
+      - name: match_status
+        tests:
+          - accepted_values:
+              values: ['Matched', 'Mismatch-Qty', 'Mismatch-Price']
