@@ -1,0 +1,57 @@
+-- Snowflake Setup — Database, Warehouses, Storage Integration
+
+
+-- Database and schemas 
+
+CREATE DATABASE IF NOT EXISTS NESTLE_PROCUREMENT_DB;
+CREATE SCHEMA IF NOT EXISTS NESTLE_PROCUREMENT_DB.RAW;
+CREATE SCHEMA IF NOT EXISTS NESTLE_PROCUREMENT_DB.STAGING;
+CREATE SCHEMA IF NOT EXISTS NESTLE_PROCUREMENT_DB.MART;
+
+--  Virtual warehouses
+
+CREATE WAREHOUSE IF NOT EXISTS LOAD_WH  
+WITH WAREHOUSE_SIZE = 'XSMALL' 
+AUTO_SUSPEND = 60 
+AUTO_RESUME = TRUE;
+
+CREATE WAREHOUSE IF NOT EXISTS TRANSFORM_WH 
+WITH WAREHOUSE_SIZE = 'SMALL' 
+AUTO_SUSPEND = 60 
+AUTO_RESUME = TRUE;
+
+-- Storage integration to S3 (credential-less, IAM role based)
+
+CREATE STORAGE INTEGRATION nestle_s3_integration
+  TYPE = EXTERNAL_STAGE
+  STORAGE_PROVIDER = 'S3'
+  ENABLED = TRUE
+  STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::<AWS_ACCOUNT_ID>:role/nestle-snowflake-access-role'
+  STORAGE_ALLOWED_LOCATIONS = ('s3://nestle-procurement-raw/');
+
+-- Run this, then copy the output STORAGE_AWS_IAM_USER_ARN + STORAGE_AWS_EXTERNAL_ID
+-- into the trust policy of the AWS IAM role above.
+DESC INTEGRATION nestle_s3_integration;
+
+-- 1.4 File formats
+CREATE OR REPLACE FILE FORMAT NESTLE_PROCUREMENT_DB.RAW.CSV_STANDARD
+  TYPE = 'CSV'
+  FIELD_DELIMITER = ','
+  SKIP_HEADER = 1
+  FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+  NULL_IF = ('', 'N/A');
+
+CREATE OR REPLACE FILE FORMAT NESTLE_PROCUREMENT_DB.RAW.JSON_STANDARD
+  TYPE = 'JSON'
+  STRIP_OUTER_ARRAY = TRUE;
+
+--  External stages (one per source domain, or one generic stage pointed at bucket root)
+
+CREATE OR REPLACE STAGE NESTLE_PROCUREMENT_DB.RAW.S3_PROCUREMENT_STAGE
+  STORAGE_INTEGRATION = nestle_s3_integration
+  URL = 's3://nestle-procurement-raw/'
+  FILE_FORMAT = NESTLE_PROCUREMENT_DB.RAW.CSV_STANDARD;
+
+-- Quick smoke test: list files Snowflake can see in the bucket
+
+LIST @NESTLE_PROCUREMENT_DB.RAW.S3_PROCUREMENT_STAGE;
